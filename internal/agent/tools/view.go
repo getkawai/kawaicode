@@ -13,12 +13,12 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"charm.land/fantasy"
 	"github.com/charmbracelet/crush/internal/filepathext"
 	"github.com/charmbracelet/crush/internal/filetracker"
 	"github.com/charmbracelet/crush/internal/lsp"
 	"github.com/charmbracelet/crush/internal/permission"
 	"github.com/charmbracelet/crush/internal/skills"
+	"github.com/getkawai/unillm"
 )
 
 //go:embed view.md
@@ -64,13 +64,13 @@ func NewViewTool(
 	filetracker filetracker.Service,
 	workingDir string,
 	skillsPaths ...string,
-) fantasy.AgentTool {
-	return fantasy.NewAgentTool(
+) unillm.AgentTool {
+	return unillm.NewAgentTool(
 		ViewToolName,
 		string(viewDescription),
-		func(ctx context.Context, params ViewParams, call fantasy.ToolCall) (fantasy.ToolResponse, error) {
+		func(ctx context.Context, params ViewParams, call unillm.ToolCall) (unillm.ToolResponse, error) {
 			if params.FilePath == "" {
-				return fantasy.NewTextErrorResponse("file_path is required"), nil
+				return unillm.NewTextErrorResponse("file_path is required"), nil
 			}
 
 			// Handle relative paths
@@ -79,12 +79,12 @@ func NewViewTool(
 			// Check if file is outside working directory and request permission if needed
 			absWorkingDir, err := filepath.Abs(workingDir)
 			if err != nil {
-				return fantasy.ToolResponse{}, fmt.Errorf("error resolving working directory: %w", err)
+				return unillm.ToolResponse{}, fmt.Errorf("error resolving working directory: %w", err)
 			}
 
 			absFilePath, err := filepath.Abs(filePath)
 			if err != nil {
-				return fantasy.ToolResponse{}, fmt.Errorf("error resolving file path: %w", err)
+				return unillm.ToolResponse{}, fmt.Errorf("error resolving file path: %w", err)
 			}
 
 			relPath, err := filepath.Rel(absWorkingDir, absFilePath)
@@ -93,7 +93,7 @@ func NewViewTool(
 
 			sessionID := GetSessionFromContext(ctx)
 			if sessionID == "" {
-				return fantasy.ToolResponse{}, fmt.Errorf("session ID is required for accessing files outside working directory")
+				return unillm.ToolResponse{}, fmt.Errorf("session ID is required for accessing files outside working directory")
 			}
 
 			// Request permission for files outside working directory, unless it's a skill file.
@@ -110,10 +110,10 @@ func NewViewTool(
 					},
 				)
 				if permReqErr != nil {
-					return fantasy.ToolResponse{}, permReqErr
+					return unillm.ToolResponse{}, permReqErr
 				}
 				if !granted {
-					return fantasy.ToolResponse{}, permission.ErrorPermissionDenied
+					return unillm.ToolResponse{}, permission.ErrorPermissionDenied
 				}
 			}
 
@@ -139,24 +139,24 @@ func NewViewTool(
 						}
 
 						if len(suggestions) > 0 {
-							return fantasy.NewTextErrorResponse(fmt.Sprintf("File not found: %s\n\nDid you mean one of these?\n%s",
+							return unillm.NewTextErrorResponse(fmt.Sprintf("File not found: %s\n\nDid you mean one of these?\n%s",
 								filePath, strings.Join(suggestions, "\n"))), nil
 						}
 					}
 
-					return fantasy.NewTextErrorResponse(fmt.Sprintf("File not found: %s", filePath)), nil
+					return unillm.NewTextErrorResponse(fmt.Sprintf("File not found: %s", filePath)), nil
 				}
-				return fantasy.ToolResponse{}, fmt.Errorf("error accessing file: %w", err)
+				return unillm.ToolResponse{}, fmt.Errorf("error accessing file: %w", err)
 			}
 
 			// Check if it's a directory
 			if fileInfo.IsDir() {
-				return fantasy.NewTextErrorResponse(fmt.Sprintf("Path is a directory, not a file: %s", filePath)), nil
+				return unillm.NewTextErrorResponse(fmt.Sprintf("Path is a directory, not a file: %s", filePath)), nil
 			}
 
 			// Based on the specifications we should not limit the skills read.
 			if !isSkillFile && fileInfo.Size() > MaxReadSize {
-				return fantasy.NewTextErrorResponse(fmt.Sprintf("File is too large (%d bytes). Maximum size is %d bytes",
+				return unillm.NewTextErrorResponse(fmt.Sprintf("File is too large (%d bytes). Maximum size is %d bytes",
 					fileInfo.Size(), MaxReadSize)), nil
 			}
 
@@ -173,25 +173,25 @@ func NewViewTool(
 			if isSupportedImage {
 				if !GetSupportsImagesFromContext(ctx) {
 					modelName := GetModelNameFromContext(ctx)
-					return fantasy.NewTextErrorResponse(fmt.Sprintf("This model (%s) does not support image data.", modelName)), nil
+					return unillm.NewTextErrorResponse(fmt.Sprintf("This model (%s) does not support image data.", modelName)), nil
 				}
 
 				imageData, readErr := os.ReadFile(filePath)
 				if readErr != nil {
-					return fantasy.ToolResponse{}, fmt.Errorf("error reading image file: %w", readErr)
+					return unillm.ToolResponse{}, fmt.Errorf("error reading image file: %w", readErr)
 				}
 
 				encoded := base64.StdEncoding.EncodeToString(imageData)
-				return fantasy.NewImageResponse([]byte(encoded), mimeType), nil
+				return newMediaToolResponseFromBase64("", mimeType, encoded), nil
 			}
 
 			// Read the file content
 			content, hasMore, err := readTextFile(filePath, params.Offset, params.Limit)
 			if err != nil {
-				return fantasy.ToolResponse{}, fmt.Errorf("error reading file: %w", err)
+				return unillm.ToolResponse{}, fmt.Errorf("error reading file: %w", err)
 			}
 			if !utf8.ValidString(content) {
-				return fantasy.NewTextErrorResponse("File content is not valid UTF-8"), nil
+				return unillm.NewTextErrorResponse("File content is not valid UTF-8"), nil
 			}
 
 			openInLSPs(ctx, lspManager, filePath)
@@ -219,8 +219,8 @@ func NewViewTool(
 				}
 			}
 
-			return fantasy.WithResponseMetadata(
-				fantasy.NewTextResponse(output),
+			return unillm.WithResponseMetadata(
+				unillm.NewTextResponse(output),
 				meta,
 			), nil
 		})

@@ -235,13 +235,12 @@ func (c *Config) configureProviders(store *ConfigStore, env env.Env, resolver Va
 		}
 
 		switch {
-		case p.ID == catwalk.InferenceProviderAnthropic && config.OAuthToken != nil:
-			// Claude Code subscription is not supported anymore. Remove to show onboarding.
-			store.RemoveConfigField(ScopeGlobal, "providers.anthropic")
-			c.Providers.Del(string(p.ID))
-			continue
 		case p.ID == catwalk.InferenceProviderCopilot && config.OAuthToken != nil:
 			prepared.SetupGitHubCopilot()
+		case p.Type == catwalk.TypeAnthropic || p.Type == catwalk.TypeBedrock || p.ID == catwalk.InferenceProviderAzure:
+			slog.Warn("Skipping unsupported provider type", "provider", p.ID, "type", p.Type)
+			c.Providers.Del(string(p.ID))
+			continue
 		}
 
 		switch p.ID {
@@ -260,34 +259,6 @@ func (c *Config) configureProviders(store *ConfigStore, env env.Env, resolver Va
 			}
 			prepared.ExtraParams["project"] = project
 			prepared.ExtraParams["location"] = location
-		case catwalk.InferenceProviderAzure:
-			endpoint, err := resolver.ResolveValue(p.APIEndpoint)
-			if err != nil || endpoint == "" {
-				if configExists {
-					slog.Warn("Skipping Azure provider due to missing API endpoint", "provider", p.ID, "error", err)
-					c.Providers.Del(string(p.ID))
-				}
-				continue
-			}
-			prepared.BaseURL = endpoint
-			prepared.ExtraParams["apiVersion"] = env.Get("AZURE_OPENAI_API_VERSION")
-		case catwalk.InferenceProviderBedrock:
-			if !hasAWSCredentials(env) {
-				if configExists {
-					slog.Warn("Skipping Bedrock provider due to missing AWS credentials")
-					c.Providers.Del(string(p.ID))
-				}
-				continue
-			}
-			prepared.ExtraParams["region"] = env.Get("AWS_REGION")
-			if prepared.ExtraParams["region"] == "" {
-				prepared.ExtraParams["region"] = env.Get("AWS_DEFAULT_REGION")
-			}
-			for _, model := range p.Models {
-				if !strings.HasPrefix(model.ID, "anthropic.") {
-					return fmt.Errorf("bedrock provider only supports anthropic models for now, found: %s", model.ID)
-				}
-			}
 		default:
 			// if the provider api or endpoint are missing we skip them
 			v, err := resolver.ResolveValue(p.APIKey)

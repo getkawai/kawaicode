@@ -507,9 +507,7 @@
           "enum": [
             "openai",
             "openai-compat",
-            "anthropic",
             "gemini",
-            "azure",
             "vertexai"
           ],
           "description": "Provider type that determines the API format",

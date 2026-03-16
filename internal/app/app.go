@@ -16,7 +16,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/catwalk/pkg/catwalk"
-	"charm.land/fantasy"
+	"github.com/getkawai/unillm"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/crush/internal/agent"
 	"github.com/charmbracelet/crush/internal/agent/notify"
@@ -238,7 +238,7 @@ func (app *App) RunNonInteractive(ctx context.Context, output io.Writer, prompt,
 	app.Permissions.AutoApproveSession(sess.ID)
 
 	type response struct {
-		result *fantasy.AgentResult
+		result *unillm.AgentResult
 		err    error
 	}
 	done := make(chan response, 1)

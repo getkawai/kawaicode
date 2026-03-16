@@ -38,6 +38,9 @@ func (m *UI) modelInfo(width int) string {
 				}
 			}
 		}
+		if providerName == "" {
+			providerName = model.ModelCfg.Provider
+		}
 	}
 
 	var modelContext *common.ModelContextInfo
