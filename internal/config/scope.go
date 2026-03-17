@@ -4,8 +4,8 @@ package config
 type Scope int
 
 const (
-	// ScopeGlobal targets the global data config (~/.local/share/crush/crush.json).
+	// ScopeGlobal targets the global data config (paths.UserDataDir()/crush.json).
 	ScopeGlobal Scope = iota
-	// ScopeWorkspace targets the workspace config (.crush/crush.json).
+	// ScopeWorkspace targets the workspace config (<data-dir>/crush.json).
 	ScopeWorkspace
 )

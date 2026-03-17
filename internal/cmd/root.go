@@ -72,7 +72,7 @@ crush --debug --cwd /path/to/project
 crush --yolo
 
 # Run with custom data directory
-crush --data-dir /path/to/custom/.crush
+crush --data-dir /path/to/custom/crush-data
   `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app, err := setupAppWithProgressBar(cmd)
