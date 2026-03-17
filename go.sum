@@ -209,6 +209,8 @@ github.com/kaptinlin/messageformat-go v0.4.18 h1:RBlHVWgZyoxTcUgGWBsl2AcyScq/urq
 github.com/kaptinlin/messageformat-go v0.4.18/go.mod h1:ntI3154RnqJgr7GaC+vZBnIExl2V3sv9selvRNNEM24=
 github.com/kawai-network/x v1.0.38 h1:LqabHxtw7Xe7jYdzBwkBAlPniMM8yynfpKMqSt3RNio=
 github.com/kawai-network/x v1.0.38/go.mod h1:LiRBOQ6BxDt/dYCwnNqoj8VJocqumChYPmFdVrPmlHw=
+github.com/kawai-network/y v0.1.14 h1:FH+/xIh3KIG3n7BoVZ435nOB6k41o8/7XrBV9jCiByQ=
+github.com/kawai-network/y v0.1.14/go.mod h1:eGBQA+pB+NbTklBBpNwAyEx+rNvN5+dxmeec+L/4TDc=
 github.com/klauspost/compress v1.18.4 h1:RPhnKRAQ4Fh8zU2FY/6ZFDwTVTxgJ/EMydqSTzE9a2c=
 github.com/klauspost/compress v1.18.4/go.mod h1:R0h/fSBs8DE4ENlcrlib3PsXS61voFxhIs2DeRhCvJ4=
 github.com/klauspost/cpuid/v2 v2.3.0 h1:S4CRMLnYUhGeDFDqkGriYKdfoFlDnMtqTiI/sFzhA9Y=
