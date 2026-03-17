@@ -8,9 +8,17 @@ import (
 
 	"github.com/charmbracelet/crush/internal/cmd"
 	_ "github.com/joho/godotenv/autoload"
+	"github.com/kawai-network/y/paths"
 )
 
 func main() {
+	// Use local data directory in development, user path in production.
+	if os.Getenv("VERIDIUM_DEV") == "1" {
+		paths.SetDataDir("data")
+	} else {
+		paths.SetDataDir(paths.UserDataDir())
+	}
+
 	if os.Getenv("CRUSH_PROFILE") != "" {
 		go func() {
 			slog.Info("Serving pprof at localhost:6060")
