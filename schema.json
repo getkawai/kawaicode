@@ -395,10 +395,11 @@
         },
         "data_directory": {
           "type": "string",
-          "description": "Directory for storing application data (relative to working directory)",
-          "default": ".crush",
+          "description": "Directory for storing application data (defaults to the platform user data directory when empty)",
+          "default": "",
           "examples": [
-            ".crush"
+            "~/.config/Kawai",
+            "~/Library/Application Support/Kawai"
           ]
         },
         "disabled_tools": {

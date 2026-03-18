@@ -100,14 +100,6 @@ func buildCommandSources(cfg *config.Config) []commandSource {
 		})
 	}
 
-	// Home directory
-	if home := home.Dir(); home != "" {
-		sources = append(sources, commandSource{
-			path:   filepath.Join(home, ".crush", "commands"),
-			prefix: userCommandPrefix,
-		})
-	}
-
 	// Project directory
 	sources = append(sources, commandSource{
 		path:   filepath.Join(cfg.Options.DataDirectory, "commands"),
