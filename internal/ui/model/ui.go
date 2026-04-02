@@ -141,6 +141,12 @@ type (
 	sessionFilesUpdatesMsg struct {
 		sessionFiles []SessionFile
 	}
+
+	// fileAttachmentResultMsg is sent when a file attachment is ready to be added.
+	fileAttachmentResultMsg struct {
+		absPath string
+		result  *message.Attachment
+	}
 )
 
 // UI represents the main user interface model.
@@ -388,8 +394,11 @@ func (m *UI) loadInitialSession() tea.Cmd {
 		return func() tea.Msg {
 			sess, err := m.com.App.Sessions.GetLast(context.Background())
 			if err != nil {
+				slog.Error("Failed to get last session", "error", err)
 				return nil
 			}
+			// Execute loadSession command synchronously to get the session data
+			// The command handles its own errors via util.ReportError
 			return m.loadSession(sess.ID)()
 		}
 	default:
@@ -529,6 +538,16 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case sendMessageMsg:
 		cmds = append(cmds, m.sendMessage(msg.Content, msg.Attachments...))
+
+	case fileAttachmentResultMsg:
+		// Update sessionFileReads in Update, not in Cmd
+		if msg.absPath != "" && !slices.Contains(m.sessionFileReads, msg.absPath) {
+			m.sessionFileReads = append(m.sessionFileReads, msg.absPath)
+		}
+		// If attachment was successfully created, attach it
+		if msg.result != nil {
+			cmds = append(cmds, m.sendMessage("", *msg.result))
+		}
 
 	case userCommandsLoadedMsg:
 		m.customCommands = msg.Commands
@@ -2265,15 +2284,7 @@ func (m *UI) FullHelp() [][]key.Binding {
 
 		switch m.focus {
 		case uiFocusEditor:
-			editorBinds := []key.Binding{
-				k.Editor.Newline,
-				k.Editor.MentionFile,
-				k.Editor.OpenEditor,
-			}
-			if m.currentModelSupportsImages() {
-				editorBinds = append(editorBinds, k.Editor.AddImage, k.Editor.PasteImage)
-			}
-			binds = append(binds, editorBinds)
+			binds = append(binds, m.editorBindings(k))
 			if hasAttachments {
 				binds = append(binds,
 					[]key.Binding{
@@ -2316,15 +2327,7 @@ func (m *UI) FullHelp() [][]key.Binding {
 					k.Sessions,
 				},
 			)
-			editorBinds := []key.Binding{
-				k.Editor.Newline,
-				k.Editor.MentionFile,
-				k.Editor.OpenEditor,
-			}
-			if m.currentModelSupportsImages() {
-				editorBinds = append(editorBinds, k.Editor.AddImage, k.Editor.PasteImage)
-			}
-			binds = append(binds, editorBinds)
+			binds = append(binds, m.editorBindings(k))
 			if hasAttachments {
 				binds = append(binds,
 					[]key.Binding{
@@ -2358,6 +2361,19 @@ func (m *UI) currentModelSupportsImages() bool {
 	}
 	model := cfg.GetModelByType(agentCfg.Model)
 	return model != nil && model.SupportsImages
+}
+
+// editorBindings returns the editor key bindings based on current model capabilities.
+func (m *UI) editorBindings(k *KeyMap) []key.Binding {
+	binds := []key.Binding{
+		k.Editor.Newline,
+		k.Editor.MentionFile,
+		k.Editor.OpenEditor,
+	}
+	if m.currentModelSupportsImages() {
+		binds = append(binds, k.Editor.AddImage, k.Editor.PasteImage)
+	}
+	return binds
 }
 
 // toggleCompactMode toggles compact mode between uiChat and uiChatCompact states.
@@ -2633,6 +2649,7 @@ func (m *UI) openEditor(value string) tea.Cmd {
 		return util.ReportError(err)
 	}
 	tmpPath := tmpfile.Name()
+	defer os.Remove(tmpPath) // Ensure temp file is cleaned up on all paths
 	defer tmpfile.Close() //nolint:errcheck
 	if _, err := tmpfile.WriteString(value); err != nil {
 		return util.ReportError(err)
@@ -2649,10 +2666,6 @@ func (m *UI) openEditor(value string) tea.Cmd {
 		return util.ReportError(err)
 	}
 	return tea.ExecProcess(cmd, func(err error) tea.Msg {
-		defer func() {
-			_ = os.Remove(tmpPath)
-		}()
-
 		if err != nil {
 			return util.ReportError(err)
 		}
@@ -2761,20 +2774,24 @@ func (m *UI) insertFileCompletion(path string) tea.Cmd {
 			return nil
 		}
 
-		m.sessionFileReads = append(m.sessionFileReads, absPath)
-
 		// Add file as attachment.
 		content, err := os.ReadFile(path)
 		if err != nil {
 			// If it fails, let the LLM handle it later.
-			return nil
+			return fileAttachmentResultMsg{
+				absPath: absPath,
+				result:  nil,
+			}
 		}
 
-		return message.Attachment{
-			FilePath: path,
-			FileName: filepath.Base(path),
-			MimeType: mimeOf(content),
-			Content:  content,
+		return fileAttachmentResultMsg{
+			absPath: absPath,
+			result: &message.Attachment{
+				FilePath: path,
+				FileName: filepath.Base(path),
+				MimeType: mimeOf(content),
+				Content:  content,
+			},
 		}
 	}
 	return tea.Batch(heightCmd, fileCmd)
@@ -3493,13 +3510,18 @@ func (m *UI) drawSessionDetails(scr uv.Screen, area uv.Rectangle) {
 }
 
 func (m *UI) runMCPPrompt(clientID, promptID string, arguments map[string]string) tea.Cmd {
+	// Create a cancellable context for the MCP prompt operation
+	ctx, cancel := context.WithCancel(context.Background())
+
 	load := func() tea.Msg {
-		prompt, err := commands.GetMCPPrompt(context.TODO(), m.com.Store(), clientID, promptID, arguments)
+		prompt, err := commands.GetMCPPrompt(ctx, m.com.Store(), clientID, promptID, arguments)
 		if err != nil {
 			// TODO: make this better
+			cancel() // Clean up context
 			return util.ReportError(err)()
 		}
 
+		cancel() // Clean up context
 		if prompt == "" {
 			return nil
 		}
@@ -3513,6 +3535,7 @@ func (m *UI) runMCPPrompt(clientID, promptID string, arguments map[string]string
 		cmds = append(cmds, cmd)
 	}
 	cmds = append(cmds, load, func() tea.Msg {
+		cancel() // Ensure context is cancelled when dialog closes
 		return closeDialogMsg{}
 	})
 
