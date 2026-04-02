@@ -123,16 +123,16 @@ type ProviderConfig struct {
 }
 
 // ToProvider converts the [ProviderConfig] to a [catwalk.Provider].
-func (pc *ProviderConfig) ToProvider() catwalk.Provider {
+func (c *ProviderConfig) ToProvider() catwalk.Provider {
 	// Convert config provider to provider.Provider format
 	provider := catwalk.Provider{
-		Name:   pc.Name,
-		ID:     catwalk.InferenceProvider(pc.ID),
-		Models: make([]catwalk.Model, len(pc.Models)),
+		Name:   c.Name,
+		ID:     catwalk.InferenceProvider(c.ID),
+		Models: make([]catwalk.Model, len(c.Models)),
 	}
 
 	// Convert models
-	for i, model := range pc.Models {
+	for i, model := range c.Models {
 		provider.Models[i] = catwalk.Model{
 			ID:                     model.ID,
 			Name:                   model.Name,
@@ -152,8 +152,8 @@ func (pc *ProviderConfig) ToProvider() catwalk.Provider {
 	return provider
 }
 
-func (pc *ProviderConfig) SetupGitHubCopilot() {
-	maps.Copy(pc.ExtraHeaders, copilot.Headers())
+func (c *ProviderConfig) SetupGitHubCopilot() {
+	maps.Copy(c.ExtraHeaders, copilot.Headers())
 }
 
 type MCPType string
@@ -570,6 +570,20 @@ func (c *ProviderConfig) TestConnection(resolver VariableResolver) error {
 		baseURL, _ := resolver.ResolveValue(c.BaseURL)
 		baseURL = cmp.Or(baseURL, "https://generativelanguage.googleapis.com")
 		testURL = baseURL + "/v1beta/models?key=" + url.QueryEscape(apiKey)
+	case catwalk.TypeBedrock:
+		// NOTE: Bedrock has a `/foundation-models` endpoint that we could in
+		// theory use, but apparently the authorization is region-specific,
+		// so it's not so trivial.
+		if strings.HasPrefix(apiKey, "ABSK") { // Bedrock API keys
+			return nil
+		}
+		return errors.New("not a valid bedrock api key")
+	case catwalk.TypeVercel:
+		// NOTE: Vercel does not validate API keys on the `/models` endpoint.
+		if strings.HasPrefix(apiKey, "vck_") { // Vercel API keys
+			return nil
+		}
+		return errors.New("not a valid vercel api key")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
