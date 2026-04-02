@@ -37,6 +37,9 @@ func init() {
 	rootCmd.PersistentFlags().BoolP("debug", "d", false, "Debug")
 	rootCmd.Flags().BoolP("help", "h", false, "Help")
 	rootCmd.Flags().BoolP("yolo", "y", false, "Automatically accept all permissions (dangerous mode)")
+	rootCmd.Flags().StringP("session", "s", "", "Continue a previous session by ID")
+	rootCmd.Flags().BoolP("continue", "C", false, "Continue the most recent session")
+	rootCmd.MarkFlagsMutuallyExclusive("session", "continue")
 
 	rootCmd.AddCommand(
 		runCmd,
@@ -76,11 +79,23 @@ crush --yolo
 crush --data-dir /path/to/custom/crush-data
   `,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		sessionID, _ := cmd.Flags().GetString("session")
+		continueLast, _ := cmd.Flags().GetBool("continue")
+
 		app, err := setupAppWithProgressBar(cmd)
 		if err != nil {
 			return err
 		}
 		defer app.Shutdown()
+
+		// Resolve session ID if provided
+		if sessionID != "" {
+			sess, err := resolveSessionID(cmd.Context(), app.Sessions, sessionID)
+			if err != nil {
+				return err
+			}
+			sessionID = sess.ID
+		}
 
 		event.AppInitialized()
 
@@ -88,7 +103,7 @@ crush --data-dir /path/to/custom/crush-data
 		var env uv.Environ = os.Environ()
 
 		com := common.DefaultCommon(app)
-		model := ui.New(com)
+		model := ui.New(com, sessionID, continueLast)
 
 		program := tea.NewProgram(
 			model,
