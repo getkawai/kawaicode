@@ -90,16 +90,20 @@ func LoadMCPPrompts() ([]MCPPrompt, error) {
 }
 
 func buildCommandSources(cfg *config.Config) []commandSource {
-	return []commandSource{
-		{
-			path:   filepath.Join(home.Config(), "kawai", "commands"),
-			prefix: userCommandPrefix,
-		},
+	sources := []commandSource{
 		{
 			path:   filepath.Join(cfg.Options.DataDirectory, "commands"),
 			prefix: projectCommandPrefix,
 		},
 	}
+	// Only add user command source if config directory is available
+	if cfgPath := home.Config(); cfgPath != "" {
+		sources = append([]commandSource{{
+			path:   filepath.Join(cfgPath, "kawai", "commands"),
+			prefix: userCommandPrefix,
+		}}, sources...)
+	}
+	return sources
 }
 
 func loadAll(sources []commandSource) ([]CustomCommand, error) {

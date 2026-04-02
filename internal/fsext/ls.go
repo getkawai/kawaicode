@@ -92,14 +92,21 @@ var gitGlobalIgnorePatterns = sync.OnceValue(func() []gitignore.Pattern {
 
 	// Get excludes file path from config, or use default fallback.
 	// cfg may be nil if LoadConfig failed, so handle that safely.
+	// If home.Config() is empty, skip loading git global ignores.
+	cfgPath := home.Config()
+	if cfgPath == "" {
+		slog.Debug("Skipping git global ignores: home config directory not available")
+		return nil
+	}
+
 	var excludesFilePath string
 	if cfg != nil {
 		excludesFilePath = cmp.Or(
 			cfg.Raw.Section("core").Options.Get("excludesfile"),
-			filepath.Join(home.Config(), "git", "ignore"),
+			filepath.Join(cfgPath, "git", "ignore"),
 		)
 	} else {
-		excludesFilePath = filepath.Join(home.Config(), "git", "ignore")
+		excludesFilePath = filepath.Join(cfgPath, "git", "ignore")
 	}
 	excludesFilePath = home.Long(excludesFilePath)
 
@@ -117,7 +124,12 @@ var gitGlobalIgnorePatterns = sync.OnceValue(func() []gitignore.Pattern {
 // kawaiGlobalIgnorePatterns returns patterns from the user's
 // ~/.config/kawai/ignore file.
 var kawaiGlobalIgnorePatterns = sync.OnceValue(func() []gitignore.Pattern {
-	name := filepath.Join(home.Config(), "kawai", "ignore")
+	cfgPath := home.Config()
+	if cfgPath == "" {
+		slog.Debug("Skipping kawai global ignores: home config directory not available")
+		return nil
+	}
+	name := filepath.Join(cfgPath, "kawai", "ignore")
 	name = home.Long(name)
 	bts, err := os.ReadFile(name)
 	if err != nil {

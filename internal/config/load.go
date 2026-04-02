@@ -714,7 +714,12 @@ func GlobalConfig() string {
 	if crushGlobal := os.Getenv("CRUSH_GLOBAL_CONFIG"); crushGlobal != "" {
 		return filepath.Join(crushGlobal, fmt.Sprintf("%s.json", appName))
 	}
-	return filepath.Join(home.Config(), appName, fmt.Sprintf("%s.json", appName))
+	cfgPath := home.Config()
+	if cfgPath == "" {
+		// No home directory available, return empty string
+		return ""
+	}
+	return filepath.Join(cfgPath, appName, fmt.Sprintf("%s.json", appName))
 }
 
 // GlobalConfigData returns the path to the main data directory for the application.
@@ -764,9 +769,14 @@ func GlobalSkillsDirs() []string {
 		return []string{crushSkills}
 	}
 
-	paths := []string{
-		filepath.Join(home.Config(), appName, "skills"),
-		filepath.Join(home.Config(), "agents", "skills"),
+	cfgPath := home.Config()
+	paths := []string{}
+	// Only add config-based paths if config directory is available
+	if cfgPath != "" {
+		paths = append(paths,
+			filepath.Join(cfgPath, appName, "skills"),
+			filepath.Join(cfgPath, "agents", "skills"),
+		)
 	}
 
 	// On Windows, also load from app data on top of `$HOME/.config/crush`.

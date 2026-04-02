@@ -40,7 +40,9 @@ func init() {
 	rootCmd.Flags().BoolP("yolo", "y", false, "Automatically accept all permissions (dangerous mode)")
 	rootCmd.Flags().StringP("session", "s", "", "Continue a previous session by ID")
 	rootCmd.Flags().BoolP("continue", "C", false, "Continue the most recent session")
-	rootCmd.MarkFlagsMutuallyExclusive("session", "continue")
+	if err := rootCmd.MarkFlagsMutuallyExclusive("session", "continue"); err != nil {
+		panic(fmt.Errorf("failed to mark flags mutually exclusive: %w", err))
+	}
 
 	rootCmd.AddCommand(
 		runCmd,
