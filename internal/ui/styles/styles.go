@@ -254,18 +254,18 @@ type Styles struct {
 	// Tool - styles for tool call rendering
 	Tool struct {
 		// Icon styles with tool status
-		IconPending   lipgloss.Style
-		IconSuccess   lipgloss.Style
-		IconError     lipgloss.Style
-		IconCancelled lipgloss.Style
+		IconPending   lipgloss.Style // Pending operation icon
+		IconSuccess   lipgloss.Style // Successful operation icon
+		IconError     lipgloss.Style // Error operation icon
+		IconCancelled lipgloss.Style // Cancelled operation icon
 
 		// Tool name styles
-		NameNormal lipgloss.Style // Top-level tool name
-		NameNested lipgloss.Style // Nested child tool name (inside Agent/Agentic Fetch)
+		NameNormal lipgloss.Style // Normal tool name
+		NameNested lipgloss.Style // Nested tool name
 
 		// Parameter list styles
-		ParamMain lipgloss.Style
-		ParamKey  lipgloss.Style
+		ParamMain lipgloss.Style // Main parameter
+		ParamKey  lipgloss.Style // Parameter keys
 
 		// Content rendering styles
 		ContentLine           lipgloss.Style // Individual content line with background and width
@@ -328,10 +328,6 @@ type Styles struct {
 		ResourceName            lipgloss.Style
 		ResourceSize            lipgloss.Style
 		MediaType               lipgloss.Style
-
-		// Docker MCP tools
-		DockerMCPActionAdd lipgloss.Style // Docker MCP add action (green)
-		DockerMCPActionDel lipgloss.Style // Docker MCP remove action (red)
 	}
 
 	// Dialog styles
@@ -636,14 +632,14 @@ func DefaultStyles() Styles {
 			StylePrimitive: ansi.StylePrimitive{
 				// BlockPrefix: "\n",
 				// BlockSuffix: "\n",
-				Color: new(charmtone.Smoke.Hex()),
+				Color: stringPtr(charmtone.Smoke.Hex()),
 			},
-			// Margin: new(uint(defaultMargin)),
+			// Margin: uintPtr(defaultMargin),
 		},
 		BlockQuote: ansi.StyleBlock{
 			StylePrimitive: ansi.StylePrimitive{},
-			Indent:         new(uint(1)),
-			IndentToken:    new("│ "),
+			Indent:         uintPtr(1),
+			IndentToken:    stringPtr("│ "),
 		},
 		List: ansi.StyleList{
 			LevelIndent: defaultListIndent,
@@ -651,17 +647,17 @@ func DefaultStyles() Styles {
 		Heading: ansi.StyleBlock{
 			StylePrimitive: ansi.StylePrimitive{
 				BlockSuffix: "\n",
-				Color:       new(charmtone.Malibu.Hex()),
-				Bold:        new(true),
+				Color:       stringPtr(charmtone.Malibu.Hex()),
+				Bold:        boolPtr(true),
 			},
 		},
 		H1: ansi.StyleBlock{
 			StylePrimitive: ansi.StylePrimitive{
 				Prefix:          " ",
 				Suffix:          " ",
-				Color:           new(charmtone.Zest.Hex()),
-				BackgroundColor: new(charmtone.Charple.Hex()),
-				Bold:            new(true),
+				Color:           stringPtr(charmtone.Zest.Hex()),
+				BackgroundColor: stringPtr(charmtone.Charple.Hex()),
+				Bold:            boolPtr(true),
 			},
 		},
 		H2: ansi.StyleBlock{
@@ -687,21 +683,21 @@ func DefaultStyles() Styles {
 		H6: ansi.StyleBlock{
 			StylePrimitive: ansi.StylePrimitive{
 				Prefix: "###### ",
-				Color:  new(charmtone.Guac.Hex()),
-				Bold:   new(false),
+				Color:  stringPtr(charmtone.Guac.Hex()),
+				Bold:   boolPtr(false),
 			},
 		},
 		Strikethrough: ansi.StylePrimitive{
-			CrossedOut: new(true),
+			CrossedOut: boolPtr(true),
 		},
 		Emph: ansi.StylePrimitive{
-			Italic: new(true),
+			Italic: boolPtr(true),
 		},
 		Strong: ansi.StylePrimitive{
-			Bold: new(true),
+			Bold: boolPtr(true),
 		},
 		HorizontalRule: ansi.StylePrimitive{
-			Color:  new(charmtone.Charcoal.Hex()),
+			Color:  stringPtr(charmtone.Charcoal.Hex()),
 			Format: "\n--------\n",
 		},
 		Item: ansi.StylePrimitive{
@@ -716,117 +712,117 @@ func DefaultStyles() Styles {
 			Unticked:       "[ ] ",
 		},
 		Link: ansi.StylePrimitive{
-			Color:     new(charmtone.Zinc.Hex()),
-			Underline: new(true),
+			Color:     stringPtr(charmtone.Zinc.Hex()),
+			Underline: boolPtr(true),
 		},
 		LinkText: ansi.StylePrimitive{
-			Color: new(charmtone.Guac.Hex()),
-			Bold:  new(true),
+			Color: stringPtr(charmtone.Guac.Hex()),
+			Bold:  boolPtr(true),
 		},
 		Image: ansi.StylePrimitive{
-			Color:     new(charmtone.Cheeky.Hex()),
-			Underline: new(true),
+			Color:     stringPtr(charmtone.Cheeky.Hex()),
+			Underline: boolPtr(true),
 		},
 		ImageText: ansi.StylePrimitive{
-			Color:  new(charmtone.Squid.Hex()),
+			Color:  stringPtr(charmtone.Squid.Hex()),
 			Format: "Image: {{.text}} →",
 		},
 		Code: ansi.StyleBlock{
 			StylePrimitive: ansi.StylePrimitive{
 				Prefix:          " ",
 				Suffix:          " ",
-				Color:           new(charmtone.Coral.Hex()),
-				BackgroundColor: new(charmtone.Charcoal.Hex()),
+				Color:           stringPtr(charmtone.Coral.Hex()),
+				BackgroundColor: stringPtr(charmtone.Charcoal.Hex()),
 			},
 		},
 		CodeBlock: ansi.StyleCodeBlock{
 			StyleBlock: ansi.StyleBlock{
 				StylePrimitive: ansi.StylePrimitive{
-					Color: new(charmtone.Charcoal.Hex()),
+					Color: stringPtr(charmtone.Charcoal.Hex()),
 				},
-				Margin: new(uint(defaultMargin)),
+				Margin: uintPtr(defaultMargin),
 			},
 			Chroma: &ansi.Chroma{
 				Text: ansi.StylePrimitive{
-					Color: new(charmtone.Smoke.Hex()),
+					Color: stringPtr(charmtone.Smoke.Hex()),
 				},
 				Error: ansi.StylePrimitive{
-					Color:           new(charmtone.Butter.Hex()),
-					BackgroundColor: new(charmtone.Sriracha.Hex()),
+					Color:           stringPtr(charmtone.Butter.Hex()),
+					BackgroundColor: stringPtr(charmtone.Sriracha.Hex()),
 				},
 				Comment: ansi.StylePrimitive{
-					Color: new(charmtone.Oyster.Hex()),
+					Color: stringPtr(charmtone.Oyster.Hex()),
 				},
 				CommentPreproc: ansi.StylePrimitive{
-					Color: new(charmtone.Bengal.Hex()),
+					Color: stringPtr(charmtone.Bengal.Hex()),
 				},
 				Keyword: ansi.StylePrimitive{
-					Color: new(charmtone.Malibu.Hex()),
+					Color: stringPtr(charmtone.Malibu.Hex()),
 				},
 				KeywordReserved: ansi.StylePrimitive{
-					Color: new(charmtone.Pony.Hex()),
+					Color: stringPtr(charmtone.Pony.Hex()),
 				},
 				KeywordNamespace: ansi.StylePrimitive{
-					Color: new(charmtone.Pony.Hex()),
+					Color: stringPtr(charmtone.Pony.Hex()),
 				},
 				KeywordType: ansi.StylePrimitive{
-					Color: new(charmtone.Guppy.Hex()),
+					Color: stringPtr(charmtone.Guppy.Hex()),
 				},
 				Operator: ansi.StylePrimitive{
-					Color: new(charmtone.Salmon.Hex()),
+					Color: stringPtr(charmtone.Salmon.Hex()),
 				},
 				Punctuation: ansi.StylePrimitive{
-					Color: new(charmtone.Zest.Hex()),
+					Color: stringPtr(charmtone.Zest.Hex()),
 				},
 				Name: ansi.StylePrimitive{
-					Color: new(charmtone.Smoke.Hex()),
+					Color: stringPtr(charmtone.Smoke.Hex()),
 				},
 				NameBuiltin: ansi.StylePrimitive{
-					Color: new(charmtone.Cheeky.Hex()),
+					Color: stringPtr(charmtone.Cheeky.Hex()),
 				},
 				NameTag: ansi.StylePrimitive{
-					Color: new(charmtone.Mauve.Hex()),
+					Color: stringPtr(charmtone.Mauve.Hex()),
 				},
 				NameAttribute: ansi.StylePrimitive{
-					Color: new(charmtone.Hazy.Hex()),
+					Color: stringPtr(charmtone.Hazy.Hex()),
 				},
 				NameClass: ansi.StylePrimitive{
-					Color:     new(charmtone.Salt.Hex()),
-					Underline: new(true),
-					Bold:      new(true),
+					Color:     stringPtr(charmtone.Salt.Hex()),
+					Underline: boolPtr(true),
+					Bold:      boolPtr(true),
 				},
 				NameDecorator: ansi.StylePrimitive{
-					Color: new(charmtone.Citron.Hex()),
+					Color: stringPtr(charmtone.Citron.Hex()),
 				},
 				NameFunction: ansi.StylePrimitive{
-					Color: new(charmtone.Guac.Hex()),
+					Color: stringPtr(charmtone.Guac.Hex()),
 				},
 				LiteralNumber: ansi.StylePrimitive{
-					Color: new(charmtone.Julep.Hex()),
+					Color: stringPtr(charmtone.Julep.Hex()),
 				},
 				LiteralString: ansi.StylePrimitive{
-					Color: new(charmtone.Cumin.Hex()),
+					Color: stringPtr(charmtone.Cumin.Hex()),
 				},
 				LiteralStringEscape: ansi.StylePrimitive{
-					Color: new(charmtone.Bok.Hex()),
+					Color: stringPtr(charmtone.Bok.Hex()),
 				},
 				GenericDeleted: ansi.StylePrimitive{
-					Color: new(charmtone.Coral.Hex()),
+					Color: stringPtr(charmtone.Coral.Hex()),
 				},
 				GenericEmph: ansi.StylePrimitive{
-					Italic: new(true),
+					Italic: boolPtr(true),
 				},
 				GenericInserted: ansi.StylePrimitive{
-					Color: new(charmtone.Guac.Hex()),
+					Color: stringPtr(charmtone.Guac.Hex()),
 				},
 				GenericStrong: ansi.StylePrimitive{
-					Bold: new(true),
+					Bold: boolPtr(true),
 				},
 				GenericSubheading: ansi.StylePrimitive{
-					Color: new(charmtone.Squid.Hex()),
+					Color: stringPtr(charmtone.Squid.Hex()),
 				},
 				Background: ansi.StylePrimitive{
-					BackgroundColor: new(charmtone.Charcoal.Hex()),
+					BackgroundColor: stringPtr(charmtone.Charcoal.Hex()),
 				},
 			},
 		},
@@ -841,8 +837,8 @@ func DefaultStyles() Styles {
 	}
 
 	// PlainMarkdown style - muted colors on subtle background for thinking content.
-	plainBg := new(bgBaseLighter.Hex())
-	plainFg := new(fgMuted.Hex())
+	plainBg := stringPtr(bgBaseLighter.Hex())
+	plainFg := stringPtr(fgMuted.Hex())
 	s.PlainMarkdown = ansi.StyleConfig{
 		Document: ansi.StyleBlock{
 			StylePrimitive: ansi.StylePrimitive{
@@ -855,8 +851,8 @@ func DefaultStyles() Styles {
 				Color:           plainFg,
 				BackgroundColor: plainBg,
 			},
-			Indent:      new(uint(1)),
-			IndentToken: new("│ "),
+			Indent:      uintPtr(1),
+			IndentToken: stringPtr("│ "),
 		},
 		List: ansi.StyleList{
 			LevelIndent: defaultListIndent,
@@ -864,7 +860,7 @@ func DefaultStyles() Styles {
 		Heading: ansi.StyleBlock{
 			StylePrimitive: ansi.StylePrimitive{
 				BlockSuffix:     "\n",
-				Bold:            new(true),
+				Bold:            boolPtr(true),
 				Color:           plainFg,
 				BackgroundColor: plainBg,
 			},
@@ -873,7 +869,7 @@ func DefaultStyles() Styles {
 			StylePrimitive: ansi.StylePrimitive{
 				Prefix:          " ",
 				Suffix:          " ",
-				Bold:            new(true),
+				Bold:            boolPtr(true),
 				Color:           plainFg,
 				BackgroundColor: plainBg,
 			},
@@ -914,17 +910,17 @@ func DefaultStyles() Styles {
 			},
 		},
 		Strikethrough: ansi.StylePrimitive{
-			CrossedOut:      new(true),
+			CrossedOut:      boolPtr(true),
 			Color:           plainFg,
 			BackgroundColor: plainBg,
 		},
 		Emph: ansi.StylePrimitive{
-			Italic:          new(true),
+			Italic:          boolPtr(true),
 			Color:           plainFg,
 			BackgroundColor: plainBg,
 		},
 		Strong: ansi.StylePrimitive{
-			Bold:            new(true),
+			Bold:            boolPtr(true),
 			Color:           plainFg,
 			BackgroundColor: plainBg,
 		},
@@ -952,17 +948,17 @@ func DefaultStyles() Styles {
 			Unticked: "[ ] ",
 		},
 		Link: ansi.StylePrimitive{
-			Underline:       new(true),
+			Underline:       boolPtr(true),
 			Color:           plainFg,
 			BackgroundColor: plainBg,
 		},
 		LinkText: ansi.StylePrimitive{
-			Bold:            new(true),
+			Bold:            boolPtr(true),
 			Color:           plainFg,
 			BackgroundColor: plainBg,
 		},
 		Image: ansi.StylePrimitive{
-			Underline:       new(true),
+			Underline:       boolPtr(true),
 			Color:           plainFg,
 			BackgroundColor: plainBg,
 		},
@@ -985,7 +981,7 @@ func DefaultStyles() Styles {
 					Color:           plainFg,
 					BackgroundColor: plainBg,
 				},
-				Margin: new(uint(defaultMargin)),
+				Margin: uintPtr(defaultMargin),
 			},
 		},
 		Table: ansi.StyleTable{
@@ -1123,7 +1119,7 @@ func DefaultStyles() Styles {
 	s.Tool.IconCancelled = s.Muted.SetString(ToolPending)
 
 	s.Tool.NameNormal = base.Foreground(blue)
-	s.Tool.NameNested = base.Foreground(blue)
+	s.Tool.NameNested = base.Foreground(fgHalfMuted)
 
 	s.Tool.ParamMain = s.Subtle
 	s.Tool.ParamKey = s.Subtle
@@ -1185,10 +1181,6 @@ func DefaultStyles() Styles {
 	s.Tool.ResourceName = base
 	s.Tool.MediaType = base
 	s.Tool.ResourceSize = base.Foreground(fgMuted)
-
-	// Docker MCP styles
-	s.Tool.DockerMCPActionAdd = base.Foreground(greenLight)
-	s.Tool.DockerMCPActionDel = base.Foreground(red)
 
 	// Buttons
 	s.ButtonFocus = lipgloss.NewStyle().Foreground(white).Background(secondary)
@@ -1376,6 +1368,10 @@ func DefaultStyles() Styles {
 	return s
 }
 
+// Helper functions for style pointers
+func boolPtr(b bool) *bool       { return &b }
+func stringPtr(s string) *string { return &s }
+func uintPtr(u uint) *uint       { return &u }
 func chromaStyle(style ansi.StylePrimitive) string {
 	var s strings.Builder
 

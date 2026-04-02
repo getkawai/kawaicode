@@ -16,10 +16,7 @@ import (
 	"github.com/charmbracelet/crush/internal/permission"
 )
 
-const (
-	FetchToolName = "fetch"
-	MaxFetchSize  = 1 * 1024 * 1024 // 1MB
-)
+const FetchToolName = "fetch"
 
 //go:embed fetch.md
 var fetchDescription []byte
@@ -108,7 +105,11 @@ func NewFetchTool(permissions permission.Service, workingDir string, client *htt
 				return unillm.NewTextErrorResponse(fmt.Sprintf("Request failed with status code: %d", resp.StatusCode)), nil
 			}
 
-			body, err := io.ReadAll(io.LimitReader(resp.Body, MaxFetchSize))
+			// maxFetchResponseSizeBytes is the maximum size of response body to read (5MB)
+			const maxFetchResponseSizeBytes = int64(5 * 1024 * 1024)
+
+			maxSize := maxFetchResponseSizeBytes
+			body, err := io.ReadAll(io.LimitReader(resp.Body, maxSize))
 			if err != nil {
 				return unillm.NewTextErrorResponse("Failed to read response body: " + err.Error()), nil
 			}
@@ -160,9 +161,9 @@ func NewFetchTool(permissions permission.Service, workingDir string, client *htt
 				}
 			}
 			// truncate content if it exceeds max read size
-			if int64(len(content)) > MaxFetchSize {
-				content = content[:MaxFetchSize]
-				content += fmt.Sprintf("\n\n[Content truncated to %d bytes]", MaxFetchSize)
+			if int64(len(content)) > MaxReadSize {
+				content = content[:MaxReadSize]
+				content += fmt.Sprintf("\n\n[Content truncated to %d bytes]", MaxReadSize)
 			}
 
 			return unillm.NewTextResponse(content), nil

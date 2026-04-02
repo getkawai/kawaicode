@@ -9,17 +9,14 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
-	"sort"
 	"strings"
 	"syscall"
 	"time"
 
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/colorprofile"
-	"github.com/charmbracelet/crush/internal/agent/tools"
 	"github.com/charmbracelet/crush/internal/config"
 	"github.com/charmbracelet/crush/internal/db"
-	"github.com/charmbracelet/crush/internal/event"
 	"github.com/charmbracelet/crush/internal/message"
 	"github.com/charmbracelet/crush/internal/session"
 	"github.com/charmbracelet/crush/internal/ui/chat"
@@ -32,7 +29,7 @@ import (
 
 var sessionCmd = &cobra.Command{
 	Use:     "session",
-	Aliases: []string{"sessions", "s"},
+	Aliases: []string{"sessions"},
 	Short:   "Manage sessions",
 	Long:    "Manage Crush sessions. Agents can use --json for machine-readable output.",
 }
@@ -129,9 +126,6 @@ func sessionSetup(cmd *cobra.Command) (context.Context, *sessionServices, func()
 }
 
 func runSessionList(cmd *cobra.Command, _ []string) error {
-	event.SetNonInteractive(true)
-	event.SessionListed(sessionListJSON)
-
 	ctx, svc, cleanup, err := sessionSetup(cmd)
 	if err != nil {
 		return err
@@ -255,9 +249,6 @@ func resolveSessionID(ctx context.Context, svc session.Service, id string) (sess
 }
 
 func runSessionShow(cmd *cobra.Command, args []string) error {
-	event.SetNonInteractive(true)
-	event.SessionShown(sessionShowJSON)
-
 	ctx, svc, cleanup, err := sessionSetup(cmd)
 	if err != nil {
 		return err
@@ -282,9 +273,6 @@ func runSessionShow(cmd *cobra.Command, args []string) error {
 }
 
 func runSessionDelete(cmd *cobra.Command, args []string) error {
-	event.SetNonInteractive(true)
-	event.SessionDeletedCommand(sessionDeleteJSON)
-
 	ctx, svc, cleanup, err := sessionSetup(cmd)
 	if err != nil {
 		return err
@@ -317,9 +305,6 @@ func runSessionDelete(cmd *cobra.Command, args []string) error {
 }
 
 func runSessionRename(cmd *cobra.Command, args []string) error {
-	event.SetNonInteractive(true)
-	event.SessionRenamed(sessionRenameJSON)
-
 	ctx, svc, cleanup, err := sessionSetup(cmd)
 	if err != nil {
 		return err
@@ -353,9 +338,6 @@ func runSessionRename(cmd *cobra.Command, args []string) error {
 }
 
 func runSessionLast(cmd *cobra.Command, _ []string) error {
-	event.SetNonInteractive(true)
-	event.SessionLastShown(sessionLastJSON)
-
 	ctx, svc, cleanup, err := sessionSetup(cmd)
 	if err != nil {
 		return err
@@ -399,7 +381,6 @@ func messagePtrs(msgs []message.Message) []*message.Message {
 }
 
 func outputSessionJSON(w io.Writer, sess session.Session, msgs []*message.Message) error {
-	skills := extractSkillsFromMessages(msgs)
 	output := sessionShowOutput{
 		Meta: sessionShowMeta{
 			ID:               session.HashID(sess.ID),
@@ -411,7 +392,6 @@ func outputSessionJSON(w io.Writer, sess session.Session, msgs []*message.Messag
 			PromptTokens:     sess.PromptTokens,
 			CompletionTokens: sess.CompletionTokens,
 			TotalTokens:      sess.PromptTokens + sess.CompletionTokens,
-			Skills:           skills,
 		},
 		Messages: make([]sessionShowMessage, len(msgs)),
 	}
@@ -448,8 +428,6 @@ func outputSessionHuman(ctx context.Context, sess session.Session, msgs []*messa
 	hash := session.HashID(sess.ID)[:12]
 	created := time.Unix(sess.CreatedAt, 0).Format("Mon Jan 2 15:04:05 2006 -0700")
 
-	skills := extractSkillsFromMessages(msgs)
-
 	// Render to buffer to determine actual height
 	var buf strings.Builder
 
@@ -457,19 +435,6 @@ func outputSessionHuman(ctx context.Context, sess session.Session, msgs []*messa
 	fmt.Fprintln(&buf, keyStyle.Render("UUID:  ")+valStyle.Render(sess.ID))
 	fmt.Fprintln(&buf, keyStyle.Render("Title: ")+valStyle.Render(sess.Title))
 	fmt.Fprintln(&buf, keyStyle.Render("Date:  ")+valStyle.Render(created))
-	if len(skills) > 0 {
-		skillNames := make([]string, len(skills))
-		for i, s := range skills {
-			timestamp := time.Unix(sess.CreatedAt, 0).Format("15:04:05 -0700")
-			if s.LoadedAt != "" {
-				if t, err := time.Parse(time.RFC3339, s.LoadedAt); err == nil {
-					timestamp = t.Format("15:04:05 -0700")
-				}
-			}
-			skillNames[i] = fmt.Sprintf("%s (%s)", s.Name, timestamp)
-		}
-		fmt.Fprintln(&buf, keyStyle.Render("Skills: ")+valStyle.Render(strings.Join(skillNames, ", ")))
-	}
 	fmt.Fprintln(&buf)
 
 	first := true
@@ -558,22 +523,15 @@ func sessionWriter(ctx context.Context, contentHeight int) (io.Writer, func(), b
 }
 
 type sessionShowMeta struct {
-	ID               string             `json:"id"`
-	UUID             string             `json:"uuid"`
-	Title            string             `json:"title"`
-	Created          string             `json:"created"`
-	Modified         string             `json:"modified"`
-	Cost             float64            `json:"cost"`
-	PromptTokens     int64              `json:"prompt_tokens"`
-	CompletionTokens int64              `json:"completion_tokens"`
-	TotalTokens      int64              `json:"total_tokens"`
-	Skills           []sessionShowSkill `json:"skills,omitempty"`
-}
-
-type sessionShowSkill struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	LoadedAt    string `json:"loaded_at"`
+	ID               string  `json:"id"`
+	UUID             string  `json:"uuid"`
+	Title            string  `json:"title"`
+	Created          string  `json:"created"`
+	Modified         string  `json:"modified"`
+	Cost             float64 `json:"cost"`
+	PromptTokens     int64   `json:"prompt_tokens"`
+	CompletionTokens int64   `json:"completion_tokens"`
+	TotalTokens      int64   `json:"total_tokens"`
 }
 
 type sessionShowMessage struct {
@@ -616,40 +574,6 @@ type sessionShowPart struct {
 	// Finish
 	Reason string `json:"reason,omitempty"`
 	Time   int64  `json:"time,omitempty"`
-}
-
-func extractSkillsFromMessages(msgs []*message.Message) []sessionShowSkill {
-	var skills []sessionShowSkill
-	seen := make(map[string]bool)
-
-	for _, msg := range msgs {
-		for _, part := range msg.Parts {
-			if tr, ok := part.(message.ToolResult); ok && tr.Metadata != "" {
-				var meta tools.ViewResponseMetadata
-				if err := json.Unmarshal([]byte(tr.Metadata), &meta); err == nil {
-					if meta.ResourceType == tools.ViewResourceSkill && meta.ResourceName != "" {
-						if !seen[meta.ResourceName] {
-							seen[meta.ResourceName] = true
-							skills = append(skills, sessionShowSkill{
-								Name:        meta.ResourceName,
-								Description: meta.ResourceDescription,
-								LoadedAt:    time.Unix(msg.CreatedAt, 0).Format(time.RFC3339),
-							})
-						}
-					}
-				}
-			}
-		}
-	}
-
-	sort.Slice(skills, func(i, j int) bool {
-		if skills[i].LoadedAt == skills[j].LoadedAt {
-			return skills[i].Name < skills[j].Name
-		}
-		return skills[i].LoadedAt < skills[j].LoadedAt
-	})
-
-	return skills
 }
 
 func convertParts(parts []message.ContentPart) []sessionShowPart {

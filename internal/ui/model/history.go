@@ -43,13 +43,14 @@ func (m *UI) loadPromptHistory() tea.Cmd {
 
 // handleHistoryUp handles up arrow for history navigation.
 func (m *UI) handleHistoryUp(msg tea.Msg) tea.Cmd {
-	prevHeight := m.textarea.Height()
 	// Navigate to older history entry from cursor position (0,0).
 	if m.textarea.Length() == 0 || m.isAtEditorStart() {
 		if m.historyPrev() {
 			// we send this so that the textarea moves the view to the correct position
 			// without this the cursor will show up in the wrong place.
-			return m.updateTextareaWithPrevHeight(nil, prevHeight)
+			ta, cmd := m.textarea.Update(nil)
+			m.textarea = ta
+			return cmd
 		}
 	}
 
@@ -60,44 +61,54 @@ func (m *UI) handleHistoryUp(msg tea.Msg) tea.Cmd {
 	}
 
 	// Let textarea handle normal cursor movement.
-	return m.updateTextarea(msg)
+	ta, cmd := m.textarea.Update(msg)
+	m.textarea = ta
+	return cmd
 }
 
 // handleHistoryDown handles down arrow for history navigation.
 func (m *UI) handleHistoryDown(msg tea.Msg) tea.Cmd {
-	prevHeight := m.textarea.Height()
 	// Navigate to newer history entry from end of text.
 	if m.isAtEditorEnd() {
 		if m.historyNext() {
 			// we send this so that the textarea moves the view to the correct position
 			// without this the cursor will show up in the wrong place.
-			return m.updateTextareaWithPrevHeight(nil, prevHeight)
+			ta, cmd := m.textarea.Update(nil)
+			m.textarea = ta
+			return cmd
 		}
 	}
 
 	// First move cursor to end before navigating history.
 	if m.textarea.Line() == max(m.textarea.LineCount()-1, 0) {
 		m.textarea.MoveToEnd()
-		return m.updateTextarea(nil)
+		ta, cmd := m.textarea.Update(nil)
+		m.textarea = ta
+		return cmd
 	}
 
 	// Let textarea handle normal cursor movement.
-	return m.updateTextarea(msg)
+	ta, cmd := m.textarea.Update(msg)
+	m.textarea = ta
+	return cmd
 }
 
 // handleHistoryEscape handles escape for exiting history navigation.
 func (m *UI) handleHistoryEscape(msg tea.Msg) tea.Cmd {
-	prevHeight := m.textarea.Height()
 	// Return to current draft when browsing history.
 	if m.promptHistory.index >= 0 {
 		m.promptHistory.index = -1
 		m.textarea.Reset()
 		m.textarea.InsertString(m.promptHistory.draft)
-		return m.updateTextareaWithPrevHeight(nil, prevHeight)
+		ta, cmd := m.textarea.Update(nil)
+		m.textarea = ta
+		return cmd
 	}
 
 	// Let textarea handle escape normally.
-	return m.updateTextarea(msg)
+	ta, cmd := m.textarea.Update(msg)
+	m.textarea = ta
+	return cmd
 }
 
 // updateHistoryDraft updates history state when text is modified.

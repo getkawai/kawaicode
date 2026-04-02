@@ -3,12 +3,12 @@ module github.com/charmbracelet/crush
 go 1.26.1
 
 require (
-	charm.land/bubbles/v2 v2.1.0
+	charm.land/bubbles/v2 v2.0.0
 	charm.land/bubbletea/v2 v2.0.2
-	charm.land/catwalk v0.33.2
+	charm.land/catwalk v0.29.1
 	charm.land/fang/v2 v2.0.1
 	charm.land/glamour/v2 v2.0.0
-	charm.land/lipgloss/v2 v2.0.2
+	charm.land/lipgloss/v2 v2.0.1
 	charm.land/log/v2 v2.0.0
 	charm.land/x/vcr v0.1.1
 	github.com/JohannesKaufmann/html-to-markdown v1.6.0
@@ -158,7 +158,7 @@ require (
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/klauspost/pgzip v1.2.6 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
-	github.com/mattn/go-runewidth v0.0.21 // indirect
+	github.com/mattn/go-runewidth v0.0.20 // indirect
 	github.com/mfridman/interpolate v0.0.2 // indirect
 	github.com/microcosm-cc/bluemonday v1.0.27 // indirect
 	github.com/minio/sha256-simd v1.0.0 // indirect

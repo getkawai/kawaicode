@@ -258,9 +258,6 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*unillm.
 				prepared.Messages[i].ProviderOptions = nil
 			}
 
-			// Use latest tools (updated by SetTools when MCP tools change).
-			prepared.Tools = a.tools.Copy()
-
 			queuedCalls, _ := a.messageQueue.Get(call.SessionID)
 			a.messageQueue.Del(call.SessionID)
 			for _, queued := range queuedCalls {
@@ -350,9 +347,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*unillm.
 				Finished:         false,
 			}
 			currentAssistant.AddToolCall(toolCall)
-			// Use parent ctx instead of genCtx to ensure the update succeeds
-			// even if the request is canceled mid-stream
-			return a.messages.Update(ctx, *currentAssistant)
+			return a.messages.Update(genCtx, *currentAssistant)
 		},
 		OnRetry: func(err *unillm.ProviderError, delay time.Duration) {
 			// TODO: implement
@@ -366,15 +361,11 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*unillm.
 				Finished:         true,
 			}
 			currentAssistant.AddToolCall(toolCall)
-			// Use parent ctx instead of genCtx to ensure the update succeeds
-			// even if the request is canceled mid-stream
-			return a.messages.Update(ctx, *currentAssistant)
+			return a.messages.Update(genCtx, *currentAssistant)
 		},
 		OnToolResult: func(result unillm.ToolResultContent) error {
 			toolResult := a.convertToToolResult(result)
-			// Use parent ctx instead of genCtx to ensure the message is created
-			// even if the request is canceled mid-stream
-			_, createMsgErr := a.messages.Create(ctx, currentAssistant.SessionID, message.CreateMessageParams{
+			_, createMsgErr := a.messages.Create(genCtx, currentAssistant.SessionID, message.CreateMessageParams{
 				Role: message.Tool,
 				Parts: []message.ContentPart{
 					toolResult,
@@ -477,7 +468,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*unillm.
 			}
 			content := "There was an error while executing the tool"
 			if isCancelErr {
-				content = "Error: user cancelled assistant tool calling"
+				content = "Tool execution canceled by user"
 			} else if isPermissionErr {
 				content = "User denied permission"
 			}
