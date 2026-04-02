@@ -306,11 +306,18 @@ func createDotCrushDir(dir string) error {
 	}
 
 	gitIgnorePath := filepath.Join(dir, ".gitignore")
+	gitIgnorePath := filepath.Join(dir, ".gitignore")
 	content, err := os.ReadFile(gitIgnorePath)
+	if err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to read .gitignore file: %q %w", gitIgnorePath, err)
+	}
 
-	// create or update if old version
+	// Create or update if old version.
 	if os.IsNotExist(err) || string(content) == oldGitIgnore {
 		if err := os.WriteFile(gitIgnorePath, []byte(defaultGitIgnore), 0o644); err != nil {
+			return fmt.Errorf("failed to write .gitignore file: %q %w", gitIgnorePath, err)
+		}
+	}
 			return fmt.Errorf("failed to create .gitignore file: %q %w", gitIgnorePath, err)
 		}
 	}
