@@ -3577,14 +3577,18 @@ func (m *UI) enableDockerMCP() tea.Msg {
 	if err := mcp.InitializeSingle(ctx, config.DockerMCPName, store); err != nil {
 		// Roll back runtime and in-memory state when startup fails.
 		disableErr := mcp.DisableSingle(store, config.DockerMCPName)
-		delete(store.Config().MCP, config.DockerMCPName)
+		if derr := store.DisableDockerMCP(); derr != nil {
+			disableErr = errors.Join(disableErr, derr)
+		}
 		return util.ReportError(fmt.Errorf("failed to start docker MCP: %w", errors.Join(err, disableErr)))()
 	}
 
 	if err := store.PersistDockerMCPConfig(mcpConfig); err != nil {
 		// Roll back runtime and in-memory state if persistence fails.
 		disableErr := mcp.DisableSingle(store, config.DockerMCPName)
-		delete(store.Config().MCP, config.DockerMCPName)
+		if derr := store.DisableDockerMCP(); derr != nil {
+			disableErr = errors.Join(disableErr, derr)
+		}
 		return util.ReportError(fmt.Errorf("docker MCP started but failed to persist configuration: %w", errors.Join(err, disableErr)))()
 	}
 

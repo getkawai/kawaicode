@@ -2,7 +2,6 @@
 package home
 
 import (
-	"cmp"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -31,7 +30,6 @@ func Config() string {
 		return filepath.Join(home, ".config")
 	}
 	return ""
-}
 }
 
 // Short replaces the actual home path from [Dir] with `~`.
